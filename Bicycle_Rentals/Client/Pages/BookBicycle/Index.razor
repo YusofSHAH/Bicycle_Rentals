@@ -1,0 +1,63 @@
+﻿@page "/bookbicycle/"
+@inject HttpClient _client
+@inject IJSRuntime js
+@attribute [Authorize]
+<h3>Bicycle Models Available</h3>
+
+@if (BicycleModels == null)
+{
+    <div class="alert alert-info">Loading Models...</div>
+}
+else
+{
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>Bicycle Model Name</th>
+                <th>Action</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var bicycleModel in BicycleModels)
+            {
+                <tr>
+                    <td>@bicycleModel.Name</td>
+                    <td>
+                        <a href="/bicyclemodels/view/@bicycleModel.Id" class="btn btn-primary">
+                            <span class="oi oi-book"></span>
+                        </a>
+                        <a href="/bicyclemodels/edit/@bicycleModel.Id" class="btn btn-warning">
+                            <span class="oi oi-pencil"></span>
+                        </a>
+                        <button class="btn btn-danger" @onclick="@(()=>Delete(bicycleModel.Id))">
+                            <span class="oi oi-delete"></span>
+                        </button>
+                    </td>
+                    <td>@bicycleModel.Price/Hr</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+@code {
+    private List<BicycleModel> BicycleModels;
+
+    protected async override Task OnInitializedAsync()
+    {
+        BicycleModels = await _client.GetFromJsonAsync<List<BicycleModel>>("api/BicycleModels"); //route for controller get action
+    }
+
+    async Task Delete(int bicycleModelId)
+    {
+        var bicyclemodel = BicycleModels.First(q => q.Id == bicycleModelId);
+        var confirm = await js.InvokeAsync<bool>("confirm", $"Do you want to delete {bicyclemodel.Name}?");
+        if (confirm)
+        {
+            await _client.DeleteAsync($"api/bicyclemodels/{bicycleModelId}");
+            await OnInitializedAsync();
+        }
+    }
+}
